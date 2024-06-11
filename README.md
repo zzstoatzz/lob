@@ -1,0 +1,18 @@
+## Demo Line-of-Business Application
+
+### Quickstart
+- Setup application: `docker-compose up -d`
+- Send a demo request:
+```
+» curl -X POST "http://0.0.0.0:8000/signup" -H "Content-Type: application/json" -d '{"name": "John Doe", "email": "john.doe@example.com"}'
+```
+
+### Overview
+- Task worker serving 2 background tasks
+  - Send welcome email
+  - Capture analytics data
+- FastAPI endpoint `POST /signup` to create a new user
+  - Request body: `{"name": "John Doe", "email": "foo@gmail.com"}`
+  - Triggers a run of each background task
+- Prefect server instance to monitor task runs
+  - Access the dashboard at `http://localhost:4200`

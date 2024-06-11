@@ -1,0 +1,61 @@
+services:
+
+  prefect:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: prefect server start --host 0.0.0.0
+    environment:
+      PREFECT_HOME: /prefect-data
+    ports:
+      - "4200:4200"
+    volumes:
+      - prefect-data:/prefect-data
+
+  tasks:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python tasks.py
+    depends_on:
+      - prefect
+    environment:
+      PREFECT_API_URL: http://prefect:4200/api
+      PREFECT_LOCAL_STORAGE_PATH: /task-storage
+    volumes:
+      - task-storage:/task-storage
+
+  flows:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python flows.py
+    depends_on:
+      - prefect
+    environment:
+      PREFECT_API_URL: http://prefect:4200/api
+
+  api:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python main.py
+    depends_on:
+      - prefect
+      - tasks
+      - flows
+    environment:
+      PREFECT_API_URL: http://prefect:4200/api
+      PREFECT_LOCAL_STORAGE_PATH: /task-storage
+    ports:
+      - "8000:8000"
+    volumes:
+      - task-storage:/task-storage
+
+volumes:
+  prefect-data: {}
+  task-storage: {}
