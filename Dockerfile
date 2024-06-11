@@ -4,6 +4,11 @@ WORKDIR /app
 
 COPY . .
 
-RUN pip install -U uv
+RUN pip install uv
 RUN uv venv
-RUN uv pip install git+https://github.com/prefecthq/prefect.git@main
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+RUN . .venv/bin/activate
+
+
+RUN uv pip install git+https://github.com/prefecthq/prefect.git@improve-failed-action-logging --force-reinstall

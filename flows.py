@@ -1,6 +1,7 @@
 from typing import TypeVar
 
 from prefect import flow, task
+from prefect.events import DeploymentEventTrigger
 from pydantic import BaseModel
 
 from models import User
@@ -30,19 +31,28 @@ def get_linkedin_account(user: User):
 
 
 @task
-def save_socials(*socials: T):
-    for social in socials:
-        print(f"Saving social: {social.model_dump_json()}")
+def save_social(social: T):
+    print(f"Saving social: {social.model_dump_json()}")
 
 
 @flow
-def capture_user_socials(user: User):
+def capture_user_socials(user_data: str):
+    user = User.model_validate_json(user_data)
+
     twitter_account = get_twitter_account(user)
 
     linkedin_account = get_linkedin_account(user)
 
-    save_socials(twitter_account, linkedin_account)
+    [future.wait() for future in save_social.map((twitter_account, linkedin_account))]
 
 
 if __name__ == "__main__":
-    capture_user_socials.serve(name="capture-user-socials")
+    capture_user_socials.serve(
+        name="capture-user-socials",
+        triggers=[
+            DeploymentEventTrigger(
+                expect={"user.signed-up"},
+                parameters={"user_data": "{{ event.payload.get('user_data') }}"},
+            )
+        ],
+    )
